@@ -1,28 +1,21 @@
-package main
+package poodle
 
 import (
 	"bufio"
 	"database/sql"
-	"flag"
-	"os"
-
-	_ "github.com/mattn/go-sqlite3"
+	"io"
 )
 
-var sqliteDatabase = flag.String("sqlite", "", "sqlite database to edit")
-var _ = MainHook(func() error {
-	if *sqliteDatabase == "" {
-		return nil
-	}
-
-	db, err := sql.Open("sqlite3", *sqliteDatabase)
+// SqliteInterpreter runs a sqlite3 interpreter to be interacted with.
+func SqliteInterpreter(dbname string, stdin io.Reader) error {
+	db, err := sql.Open("sqlite3", dbname)
 	if err != nil {
 		return err
 	}
 
-	r := bufio.NewReader(os.Stdin)
+	r := bufio.NewReader(stdin)
 	for {
-		line, err := r.ReadString('\n')
+		line, err := r.ReadString(';')
 		if err != nil {
 			return err
 		}
@@ -31,4 +24,5 @@ var _ = MainHook(func() error {
 			return err
 		}
 	}
-})
+	return nil
+}

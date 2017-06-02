@@ -1,35 +1,30 @@
-package main
+package poodle
 
 import (
-	"flag"
 	"fmt"
 	"math/rand"
 	"os"
+	"path"
 )
 
-var packageName = flag.String("rand-pkg", "main", "the package name to use")
-var fileBase = flag.String("rand-sig", "", "generate a random signature and place output in `filename`.go")
-var _ = MainHook(func() error {
-	if *fileBase == "" {
-		return nil
-	}
-	buf := [32]byte{}
-	n, err := rand.Read(buf[:])
+// GenerateRandomSignature generates a random byte sequence and places
+// it in a Go file for use in code. The identifier should match the
+// filename without the .go extension.
+func GenerateRandomSignature(filepath, pkgname string) error {
+	_, identifier := path.Split(filepath)
+	buf := make([]byte, 32)
+	n, err := rand.Read(buf)
 	if err != nil {
 		return err
 	}
 	if n != len(buf) {
 		return fmt.Errorf("failed to read enough random data")
 	}
-	f, err := os.Create(*fileBase + ".go")
+	f, err := os.Create(filepath + ".go")
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	_, err = fmt.Fprintf(f, "package %s\n", *packageName)
-	if err != nil {
-		return err
-	}
-	_, err = fmt.Fprintf(f, "var %s = %#v\n", *fileBase, buf)
+	_, err = fmt.Fprintf(f, "package %s\nvar %s = %#v\n", pkgname, identifier, buf)
 	return err
-})
+}

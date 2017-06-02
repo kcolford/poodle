@@ -1,4 +1,4 @@
-package main
+package poodle
 
 // #include <linux/fs.h>
 import "C"

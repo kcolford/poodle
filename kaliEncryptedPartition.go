@@ -1,11 +1,9 @@
-package main
+package poodle
 
 import (
+	"errors"
 	"fmt"
 	"os"
-
-	"errors"
-	"flag"
 
 	"github.com/rekby/mbr"
 )
@@ -14,9 +12,9 @@ const kaliEnctyptedPartno = 3
 const kaliEncryptedLocation = 0x100000000 // 4G into the device
 const sectorSize = 512
 
-func kaliAddPartition(kaliDisk *string) error {
+func kaliAddPartition(disk string) error {
 	// open the disk and check the partition table
-	f, err := os.Open(*kaliDisk)
+	f, err := os.Open(disk)
 	if err != nil {
 		return err
 	}
@@ -34,7 +32,7 @@ func kaliAddPartition(kaliDisk *string) error {
 	if !target.IsEmpty() {
 		return errors.New("the third partition is not empty")
 	}
-	info, err := os.Stat(*kaliDisk)
+	info, err := os.Stat(disk)
 	if err != nil {
 		return err
 	}
@@ -46,7 +44,7 @@ func kaliAddPartition(kaliDisk *string) error {
 	target.SetLBALen(uint32(size / sectorSize))
 
 	// write the partition table back to the device
-	f, err = os.OpenFile(*kaliDisk, os.O_WRONLY, 0644)
+	f, err = os.OpenFile(disk, os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
@@ -64,6 +62,9 @@ func kaliAddPartition(kaliDisk *string) error {
 	return nil
 }
 
+// GetPartitionName returns the name of the block device that
+// corresponds to the partition numbered partno on the enclosing block
+// device blkdev.
 func GetPartitionName(blkdev string, partno int) string {
 	lastchar := blkdev[len(blkdev)-1]
 	if '0' <= lastchar || lastchar <= '9' {
@@ -72,24 +73,18 @@ func GetPartitionName(blkdev string, partno int) string {
 	return blkdev + fmt.Sprint(partno)
 }
 
-var kaliDisk = flag.String("kali-disk", "", "format `disk` to have an extra encrypted partition")
-var _ = MainHook(func() error {
-	if *kaliDisk == "" {
-		return nil
-	}
-
+// KaliAddEncryptedPartition adds an encrypted partition to the block
+// device disk that is supposed to have the Kali Linux ISO file imaged
+// to it.
+func KaliAddEncryptedPartition(disk string) error {
 	// add the partition
-	err := kaliAddPartition(kaliDisk)
+	err := kaliAddPartition(disk)
 	if err != nil {
 		return err
 	}
 
 	// run cryptsetup to format the partition
-	partdev := GetPartitionName(*kaliDisk, kaliEnctyptedPartno)
+	partdev := GetPartitionName(disk, kaliEnctyptedPartno)
 	err = CryptsetupFormat(partdev)
-	if err != nil {
-		return err
-	}
-
-	return nil
-})
+	return err
+}
