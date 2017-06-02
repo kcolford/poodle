@@ -1,2 +1,3 @@
-// A general executable that performs multiple functions in one go.
+// A suite of general commands that can be used for system
+// administration.
 package poodle

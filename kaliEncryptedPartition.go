@@ -5,6 +5,10 @@ import (
 	"fmt"
 	"os"
 
+	"io/ioutil"
+	"path"
+	"syscall"
+
 	"github.com/rekby/mbr"
 )
 
@@ -84,7 +88,31 @@ func KaliAddEncryptedPartition(disk string) error {
 	}
 
 	// run cryptsetup to format the partition
-	partdev := GetPartitionName(disk, kaliEnctyptedPartno)
-	err = CryptsetupFormat(partdev)
+	//partdev := GetPartitionName(disk, kaliEnctyptedPartno)
+	//err = CryptsetupFormat(partdev)
 	return err
+}
+
+// KaliSetupDisk sets up a disk for using with Kali Linux's live boot
+// overlay.
+func KaliSetupDisk(disk string) error {
+	dir, err := ioutil.TempDir("", "mnt")
+	if err != nil {
+		return err
+	}
+	err = syscall.Mount(disk, dir, "", 0, "")
+	if err != nil {
+		return err
+	}
+	defer syscall.Unmount(dir, 0)
+	f, err := os.Create(path.Join(dir, "persistence.conf"))
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = f.Write([]byte("/ union\n"))
+	if err != nil {
+		return err
+	}
+	return nil
 }
