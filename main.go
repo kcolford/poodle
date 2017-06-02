@@ -2,8 +2,6 @@ package main
 
 import (
 	"flag"
-	"log"
-	"os"
 )
 
 var MainHooks = make([]func() error, 0, 32)
@@ -13,17 +11,18 @@ func MainHook(fn func() error) interface{} {
 	return nil
 }
 
+var help = flag.Bool("help", false, "print this help message")
+
 func main() {
 	flag.Parse()
-	if flag.NArg() == 0 {
-		// no flags is incorrect flags
+	if flag.NArg() == 0 || *help {
 		flag.Usage()
-		os.Exit(2)
+		return
 	}
 	for _, v := range MainHooks {
 		err := v()
 		if err != nil {
-			log.Fatal(err)
+			panic(err)
 		}
 	}
 }
