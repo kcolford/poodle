@@ -4,7 +4,7 @@ import (
 	"flag"
 )
 
-var MainHooks = make([]func() error, 0, 32)
+var MainHooks []func()error
 
 func MainHook(fn func() error) interface{} {
 	MainHooks = append(MainHooks, fn)
